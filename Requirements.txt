@@ -1,0 +1,40 @@
+# Project Requirements: Emotion Detection Analytics
+
+## Introduction
+The objective is to create an AI-based web application that performs analytics on customer feedback for signature products. The system deciphers emotions (joy, sadness, anger, fear, disgust) from text rather than simple polarity.
+
+## Tasks and Objectives
+
+### Task 1: Repository Setup
+- Establish a public GitHub repository.
+- Include a README.md with project naming details.
+
+### Task 2: Watson NLP Integration
+- Utilize the Watson NLP library's `EmotionPredict` function.
+- API Endpoint: `https://sn-watson-emotion.labs.skills.network/v1/watson.runtime.nlp.v1/NlpService/EmotionPredict`
+- Implement code in `emotion_detection.py`.
+
+### Task 3: Output Formatting
+- Process raw JSON response into a formatted dictionary.
+- Calculate the `dominant_emotion` (highest scoring value).
+
+### Task 4: Packaging
+- Package the application into a module named `EmotionDetection`.
+- Ensure modular imports via `__init__.py`.
+
+### Task 5: Unit Testing
+- Create `test_emotion_detection.py`.
+- Test against 5 key emotional markers: Glad (Joy), Mad (Anger), Disgusted (Disgust), Sad (Sadness), Afraid (Fear).
+
+### Task 6: Flask Deployment
+- Deploy via Flask on `localhost:3000`.
+- Implement the `/emotionDetector` route.
+- Ensure proper HTML/JS template integration.
+
+### Task 7: Error Handling
+- Manage status code 400 (blank entries).
+- Ensure the interface displays "Invalid text! Please try again!" for empty inputs.
+
+### Task 8: Static Code Analysis
+- Run PyLint on `server.py`.
+- Aim for a perfect 10/10 score through docstrings and styling compliance.

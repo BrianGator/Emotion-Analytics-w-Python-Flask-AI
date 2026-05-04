@@ -1,0 +1,28 @@
+# Development Summary - Emotion Analytics AI
+
+## Overview
+Emotion Analytics AI is a full-stack platform designed to process customer feedback and extract nuanced emotional insights. Unlike simple sentiment analysis (positive/negative), this application identifies specific states: Joy, Sadness, Anger, Disgust, and Fear.
+
+## Technology Stack
+- **Frontend**: React 18 with Vite.
+- **Styling**: Tailwind CSS 4.0 for a modern, fluid UI.
+- **Animations**: Motion (framer-motion) for interactive feedback.
+- **Charts**: Recharts for data visualization.
+- **Main Backend**: Express (TypeScript) serving as a proxy and task orchestrator.
+- **Project Task Backend**: Python 3 with Flask (located in /final_project) for Watson NLP course compatibility.
+- **AI Engine**: Google Gemini API for high-precision emotion extraction.
+
+## File Descriptions
+- `/src/App.tsx`: Main dashboard interface. Manages state for analysis results and UI interactions.
+- `/server.ts`: The primary server. Handles secure API communication and serves static frontend assets.
+- `/final_project/EmotionDetection/`: A modular Python package created to satisfy IBM Lab requirements.
+- `/final_project/server.py`: A Flask deployment of the emotion detection service.
+- `/final_project/test_emotion_detection.py`: Unit testing suite for emotional accuracy.
+
+## Programming Concepts Used
+1. **Asynchronous I/O**: Efficiently handling AI API requests without blocking the event loop.
+2. **Prop Drilling & State Management**: Using React hooks (`useState`, `useEffect`) to manage complex dashboard states.
+3. **Responsive Design**: Mobile-first architecture using Tailwind's layout engine.
+4. **Natural Language Processing (NLP)**: Contextual analysis of text strings to derive emotional weights.
+5. **RESTful Architecture**: Clean separation between the UI and the analysis endpoints.
+6. **Error Boundary Handling**: Graceful degradation when AI services are unreachable or input is invalid.
