@@ -1,30 +1,14 @@
-"""
-Flask web-service that wraps the EmotionDetection package.
-"""
-
-from flask import Flask, request, render_template_string
+import os
+import json
+import requests
+from flask import Flask, request, send_from_directory, render_template_string
 from EmotionDetection.emotion_detection import emotion_detector
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='dist')
 
 def _format_response(data):
     """
     Build the human-readable sentence that the assignment expects.
-
-    Parameters
-    ----------
-    data : dict
-        Dictionary returned by ``emotion_detector``. Must contain the
-        keys ``anger``, ``disgust``, ``fear``, ``joy``, ``sadness`` and
-        |dominant_emotion``.
-
-    Returns
-    -------
-    str
-        Sentence of the form:
-        For the given statement, the system response is
-        'anger': <anger>, 'disgust': <disgust>, 'fear': <fear>,
-        'joy': <joy> and 'sadness': <sadness>. The dominant emotion is <dominant_emotion>.
     """
     return (
         f"For the given statement, the system response is "
@@ -33,73 +17,114 @@ def _format_response(data):
         f"'sadness': {data['sadness']}. The dominant emotion is {data['dominant_emotion']}."
     )
 
+# --- Dashboard API (Ported from server.ts) ---
 
-@app.route("/", methods=["GET"])
-def home():
+@app.route("/api/analyze", methods=["POST"])
+def analyze_api():
     """
-    Home page - a minimal HTML form for the emotion detector.
+    Dashboard API endpoint for the React frontend.
     """
-    html = """
-    <!doctype html>
-    <html>
-      <head>
-        <title>Emotion Detector</title>
-        <style>
-          body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; line-height: 1.6; }
-          textarea { width: 100%; border-radius: 8px; border: 1px solid #ccc; padding: 10px; }
-          input[type="submit"] { background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; }
-        </style>
-      </head>
-      <body>
-        <h2>Enter a statement to analyse</h2>
-        <form action="/emotionDetector" method="get">
-          <textarea name="textToAnalyze" rows="4" placeholder="Type your text here..."></textarea><br><br>
-          <input type="submit" value="Detect Emotion">
-        </form>
-      </body>
-    </html>
-    """
-    return render_template_string(html)
+    data = request.get_json()
+    text = data.get('text', '').strip() if data else ''
 
+    if not text:
+        return {
+            "anger": None,
+            "disgust": None,
+            "fear": None,
+            "joy": None,
+            "sadness": None,
+            "dominant_emotion": None,
+            "error": "Invalid text! Please provide feedback to analyze."
+        }, 400
 
-@app.route("/emotionDetector", methods=["POST", "GET"])
+    # Primary: Watson NLP via EmotionDetection package
+    result = emotion_detector(text)
+    
+    if result.get('status_code') == 200:
+        return result
+
+    # Fallback: Gemini AI via direct REST API
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        return {"error": "API Key missing"}, 500
+
+    try:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+        prompt = f"""Analyze the following customer feedback text and output ONLY a JSON object containing the scores for these emotions: anger, disgust, fear, joy, and sadness. Each score should be between 0.0 and 1.0. Also include a "dominant_emotion" field.
+        
+        Text: "{text}"
+        
+        JSON format example:
+        {{
+          "anger": 0.01,
+          "disgust": 0.02,
+          "fear": 0.0,
+          "joy": 0.95,
+          "sadness": 0.02,
+          "dominant_emotion": "joy"
+        }}"""
+
+        payload = {
+            "contents": [{"parts": [{"text": prompt}]}]
+        }
+        
+        response = requests.post(url, json=payload)
+        response.raise_for_status()
+        resp_json = response.json()
+        
+        text_out = resp_json['candidates'][0]['content']['parts'][0]['text']
+        # Extract JSON from potential markdown tags
+        import re
+        match = re.search(r'\{[\s\S]*\}', text_out)
+        if match:
+            return json.loads(match.group(0))
+        raise Exception("JSON parse error")
+
+    except Exception as e:
+        print(f"Analysis Error: {e}")
+        return {"error": "System error during analysis."}, 500
+
+# --- Lab Requirement API ---
+
+@app.route("/emotionDetector", methods=["GET", "POST"])
 def detect_emotion():
     """
-    Receives a text string, forwards it to the EmotionDetection package,
-    and returns either:
-    * a friendly sentence (status 200) when the analysis succeeds, or
-    * an error message for invalid/blank inputs (Task 7).
+    Lab endpoint for emotion analysis.
     """
-    # 1. Retrieve the submitted text (supports GET query, POST Form, and POST JSON)
     text = ""
     if request.method == 'POST':
         if request.is_json:
-            payload = request.get_json(silent=True) or {}
-            text = payload.get("text", "").strip()
+            text = (request.get_json() or {}).get("text", "").strip()
         else:
             text = request.form.get("text", "").strip()
     else:
         text = request.args.get('textToAnalyze', "").strip()
 
-    # 2. Call the core emotion detector
     result = emotion_detector(text)
 
-    # 3. Task 7: Handling of blank input errors
     if result.get('status_code') == 400 or result.get('dominant_emotion') is None:
         return "Invalid text! Please try again!."
 
-    # 4. Build the response
-    friendly = _format_response(result)
-
-    # Return the sentence as plain text with JSON Content-Type as requested
     return (
-        friendly,
+        _format_response(result),
         200,
         {"Content-Type": "application/json"}
     )
 
+# --- Static File Serving & Routing ---
+
+@app.route("/", defaults={'path': ''})
+@app.route("/<path:path>")
+def serve(path):
+    """
+    Serves the built React app from the dist folder.
+    """
+    if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
+        return send_from_directory(app.static_folder, path)
+    else:
+        return send_from_directory(app.static_folder, 'index.html')
 
 if __name__ == "__main__":
-    # Note: host 0.0.0.0 and port 3000 are required for access in this sandbox.
-    # For local lab work, you may change this to 127.0.0.1 and 5000.
+    # Ensure port 3000 is used for external accessibility
     app.run(host="0.0.0.0", port=3000, debug=False)

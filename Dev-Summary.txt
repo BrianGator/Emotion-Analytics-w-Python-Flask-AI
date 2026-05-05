@@ -8,13 +8,13 @@ Emotion Analytics AI is a full-stack platform designed to process customer feedb
 - **Styling**: Tailwind CSS 4.0 for a modern, fluid UI.
 - **Animations**: Motion (framer-motion) for interactive feedback.
 - **Charts**: Recharts for data visualization.
-- **Main Backend**: Express (TypeScript) serving as a proxy and task orchestrator.
-- **Project Task Backend**: Python 3 with Flask (located in /final_project) for Watson NLP course compatibility.
+- **Main Backend**: Python 3 (Flask) serving as a proxy and task orchestrator.
+- **Project Task Backend**: Python 3 with Flask (located in /final_project and mirrored at root).
 - **AI Engine**: Google Gemini API for high-precision emotion extraction.
 
 ## File Descriptions
 - `/src/App.tsx`: Main dashboard interface. Manages state for analysis results and UI interactions.
-- `/server.ts`: The primary server. Handles secure API communication and serves static frontend assets.
+- `/server.py`: The primary server (Flask). Handles secure API communication, serves static frontend assets, and provides the lab endpoints.
 - `/final_project/EmotionDetection/`: A modular Python package created to satisfy IBM Lab requirements.
 - `/final_project/server.py`: A Flask deployment of the emotion detection service.
 - `/final_project/test_emotion_detection.py`: Unit testing suite for emotional accuracy.
